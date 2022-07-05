@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
+
 
 const ArrayQuestions = [
     {
@@ -31,6 +32,7 @@ const ArrayQuestions = [
     }
 ]
 
+
 let MAX_LENGTH = ArrayQuestions.length - 1
 let MIN_LENGTH = 0
 
@@ -40,18 +42,18 @@ function clamp(index) {
     return index
 }
 
+
 function getIndexQuestion(index) {
-    let finalIndex = clamp(index)
-    return ArrayQuestions[finalIndex]
+    return ArrayQuestions[clamp(index)]
 }
 
 function App() {
-    const [state, setState] = useState(null)
+    const [questionState, setQuestionState] = useState(null)
     const [currentIndex, setCurrentIndex] = useState(null)
 
     const handleStartQuestion = () => {
         const question = getIndexQuestion(0)
-        setState(question)
+        setQuestionState(question)
         setCurrentIndex(0)
     }
 
@@ -59,10 +61,10 @@ function App() {
         const question = getIndexQuestion(currentIndex + 1)
         const index = ArrayQuestions.indexOf(question)
         setCurrentIndex(index)
-        setState(question)
+        setQuestionState(question)
     }
 
-    if (state === null) {
+    if (questionState === null) {
         return (
             <div className='wrap_container'>
                 <button className='primary' onClick={handleStartQuestion}>Comenzar Rapjuve Quizapp</button>
@@ -70,7 +72,11 @@ function App() {
         )
     }
 
-    const {anwers} = state
+    const operationProps = {
+        question: questionState.question,
+        anwers: questionState.anwers,
+        handleNextQuestion: () => handleNextQuestion()
+    }
 
     return (
         <div className="App">
@@ -79,36 +85,67 @@ function App() {
             </header>
             <div className='wrap_container'>
                 <div className='quiz-card'>
-                    <h2>{state.question}</h2>
-                    <div className='quiz-anwers'>
-                        <ButtonBuilderFromArray data={anwers} />
-                    </div>
-                    <div className='actions'>
-                        <button className='primary' onClick={handleNextQuestion}>Siguiente</button>
-                    </div>
+                    <h2>{questionState.question}</h2>
+                    <ButtonGroupBuilder {...operationProps} />
                 </div>
             </div>
         </div>
-    );
+    )
 }
 
-function ButtonBuilderFromArray({ data }) {
+function ButtonGroupBuilder({ question, anwers, handleNextQuestion }) {
+    const nextButton = useRef()
 
     useEffect(() => {
-        document.querySelector('.quiz-anwers').classList.remove('visible');
-    }, [data])
+        nextButton.current.disabled = true
+        clearBodyBackground()
+    }, [question])
 
-    const handleOnclick = () => {
-        document.querySelector('.quiz-anwers').classList.add('visible');
+    const clearBodyBackground = () => {
+        document.querySelector('body').classList.remove('correct')
+        document.querySelector('body').classList.remove('incorrect')
     }
 
-    const Buttons = () => data.map((item, index) => {
-        return <button key={index.toString()} data-istrue={`${item.isTrue}`} onClick={handleOnclick}>{item.value}</button>
-    }).sort(() => Math.random() - 0.5)
+    const handleClick = (e) => {
+        
+        const value = e.target.dataset.istrue
+        
+        clearBodyBackground()
+        
+        if (value === "true") { 
+            document.querySelector('body').classList.add('correct')
+            nextButton.current.disabled = false
+        }
+ 
+        if (value === "false") {
+            document.querySelector('body').classList.add('incorrect')
+            nextButton.current.disabled = true
+        }
+        
+        
+    }
 
-    return <Buttons />
-    
+    const buttons = anwers.map((answer, index) => {
+        return (
+            <button
+                key={index}
+                data-istrue={answer.isTrue}
+                value={answer}
+                onClick={handleClick}>
+                {answer.value}
+            </button>
+        )
+    })
+
+    buttons.sort(() => Math.random() - 0.5)
+
+    return (
+        <div className='buttons-quiz-anwers'>
+            {buttons}
+            <button className='primary' ref={nextButton} onClick={handleNextQuestion}>Siguiente</button>
+        </div>
+    )
+
 }
-
 
 export default App;
