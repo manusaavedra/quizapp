@@ -1,40 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
 import './App.css';
+import { Howl } from 'howler';
+import { useEffect, useRef, useState } from 'react';
+import { BibleQuestions } from './questions';
+import { useScoreStore } from './useScoreStore';
 
-
-const ArrayQuestions = [
-    {
-        question: "¿Cuánto es 2+2?",
-        anwers: [
-            { value: 4, isTrue: true },
-            { value: 8, isTrue: false },
-            { value: 6, isTrue: false },
-            { value: 3, isTrue: false }
-        ]
-    },
-    {
-        question: "¿Donde nació Jesús?",
-        anwers: [
-            { value: "Belén", isTrue: true },
-            { value: "Venezuela", isTrue: false },
-            { value: "Palestina", isTrue: false },
-            { value: "Jerusalem", isTrue: false }
-        ]
-    },
-    {
-        question: "¿Quien creó el arca?",
-        anwers: [
-            { value: "Noé", isTrue: true },
-            { value: "Hitler", isTrue: false },
-            { value: "José", isTrue: false },
-            { value: "Moises", isTrue: false }
-        ]
-    }
-]
-
-
-let MAX_LENGTH = ArrayQuestions.length - 1
-let MIN_LENGTH = 0
+const MAX_LENGTH = BibleQuestions.length - 1
+const MIN_LENGTH = 0
 
 function clamp(index) {
     if (index > MAX_LENGTH) return MIN_LENGTH
@@ -42,24 +13,26 @@ function clamp(index) {
     return index
 }
 
-
 function getIndexQuestion(index) {
-    return ArrayQuestions[clamp(index)]
+    console.log(BibleQuestions[clamp(index)])
+    return BibleQuestions[clamp(index)]
 }
 
 function App() {
     const [questionState, setQuestionState] = useState(null)
     const [currentIndex, setCurrentIndex] = useState(null)
+    const {success, failed} = useScoreStore()
 
     const handleStartQuestion = () => {
-        const question = getIndexQuestion(0)
+        const randomIndex = Math.floor(Math.random() * BibleQuestions.length)
+        const question = getIndexQuestion(randomIndex)
         setQuestionState(question)
         setCurrentIndex(0)
     }
 
     const handleNextQuestion = () => {
         const question = getIndexQuestion(currentIndex + 1)
-        const index = ArrayQuestions.indexOf(question)
+        const index = BibleQuestions.indexOf(question)
         setCurrentIndex(index)
         setQuestionState(question)
     }
@@ -67,25 +40,31 @@ function App() {
     if (questionState === null) {
         return (
             <div className='wrap_container'>
-                <button className='primary' onClick={handleStartQuestion}>Comenzar Rapjuve Quizapp</button>
+                <button className='primary' onClick={handleStartQuestion}>Comenzar A Jugar Biblionario</button>
             </div>
         )
     }
 
     const operationProps = {
         question: questionState.question,
-        anwers: questionState.anwers,
+        answers: questionState.answers,
         handleNextQuestion: () => handleNextQuestion()
     }
 
     return (
         <div className="App">
-            <header className="app-header">
-                <h4>Rapjuve QuizApp</h4>
+            <header className="w-full px-4 py-2 bg-black text-white flex items-center justify-between">
+                <div className="max-w-2xl mx-auto flex items-center justify-between">
+                    <h4 className="text-2xl font-bold">Biblionario</h4>
+                    <div className="flex items-center gap-4">
+                        <span className="bg-green-900 font-semibold p-1 rounded-md">Correctas {success}</span>
+                        <span className="bg-red-900 font-semibold p-1 rounded-md text-white">Fallidas {failed}</span>
+                    </div>
+                </div>
             </header>
-            <div className='wrap_container'>
+            <div className="max-w-2xl flex items-center justify-center h-[calc(100vh-200px)] my-10 mx-auto">
                 <div className='quiz-card'>
-                    <h2>{questionState.question}</h2>
+                    <h2 className="text-4xl font-bold my-8">{questionState.question}</h2>
                     <ButtonGroupBuilder {...operationProps} />
                 </div>
             </div>
@@ -93,12 +72,24 @@ function App() {
     )
 }
 
-function ButtonGroupBuilder({ question, anwers, handleNextQuestion }) {
+function ButtonGroupBuilder({ question, answers, handleNextQuestion }) {
     const nextButton = useRef()
+    const errorSoundRef = useRef()
+    const correctSoundRef = useRef()
+    const {onSuccess, onFailed} = useScoreStore()
 
     useEffect(() => {
         nextButton.current.disabled = true
         clearBodyBackground()
+
+        errorSoundRef.current = new Howl({
+            src: ['/error.mp3']
+        })
+
+        correctSoundRef.current = new Howl({
+            src: ['/correct.mp3']
+        })
+
     }, [question])
 
     const clearBodyBackground = () => {
@@ -107,25 +98,33 @@ function ButtonGroupBuilder({ question, anwers, handleNextQuestion }) {
     }
 
     const handleClick = (e) => {
-        
+
         const value = e.target.dataset.istrue
-        
+
         clearBodyBackground()
-        
-        if (value === "true") { 
+        nextButton.current.disabled = false
+
+        if (value === "true") {
             document.querySelector('body').classList.add('correct')
-            nextButton.current.disabled = false
+            correctSoundRef.current.play()
+            onSuccess()
         }
- 
+
         if (value === "false") {
             document.querySelector('body').classList.add('incorrect')
-            nextButton.current.disabled = true
+            errorSoundRef.current.play()
+            onFailed()
         }
-        
-        
+
+
     }
 
-    const buttons = anwers.map((answer, index) => {
+    const handleClickNextQuestion = () => {
+        handleNextQuestion()
+        nextButton.current.disabled = true
+    }
+
+    const buttons = answers.map((answer, index) => {
         return (
             <button
                 key={index}
@@ -140,9 +139,11 @@ function ButtonGroupBuilder({ question, anwers, handleNextQuestion }) {
     buttons.sort(() => Math.random() - 0.5)
 
     return (
-        <div className='buttons-quiz-anwers'>
-            {buttons}
-            <button className='primary' ref={nextButton} onClick={handleNextQuestion}>Siguiente</button>
+        <div className='buttons-container'>
+            <div className='buttons-quiz-anwers'>
+                {buttons}
+            </div>
+            <button className='primary w-full' ref={nextButton} onClick={handleClickNextQuestion}>Siguiente</button>
         </div>
     )
 

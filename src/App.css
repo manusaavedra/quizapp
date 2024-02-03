@@ -1,6 +1,6 @@
 :root {
   --header: #fafafa;
-  --primaryColor: #0e91e3;
+  --primaryColor: #1b1b1b;
   --falseAnwers: #e19090;
   --trueAnwers: #81d6a5;
 }
@@ -13,10 +13,6 @@ body.incorrect {
   background: var(--falseAnwers);
 }
 
-h2 {
-  font-size: 48px;
-}
-
 button {
   padding: 15px 24px;
   font-size: 18px;
@@ -25,6 +21,10 @@ button {
   border-radius: 4px;
   background-color: lightgrey;
   cursor: pointer;
+}
+
+button:focus {
+  border: 3px solid #000;
 }
 
 button:disabled {
@@ -58,6 +58,7 @@ button.primary {
 }
 
 .buttons-quiz-anwers {
+  width: 100%;
   display: grid;
   grid-template-columns: auto auto;
   flex-wrap: wrap;
