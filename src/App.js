@@ -115,8 +115,6 @@ function ButtonGroupBuilder({ question, answers, handleNextQuestion }) {
             errorSoundRef.current.play()
             onFailed()
         }
-
-
     }
 
     const handleClickNextQuestion = () => {
